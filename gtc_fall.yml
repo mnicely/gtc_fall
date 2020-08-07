@@ -1,0 +1,11 @@
+name: cusignal-dev
+channels:
+  - conda-forge
+  - nvidia
+  - defaults
+  - numba
+dependencies:
+  - scipy
+  - numpy
+  - cupy
+  - numba
