@@ -155,10 +155,10 @@ def _lombscargle(x, y, freqs, pgram, y_dot):
         sig = _numba_lombscargle_signature(numba_type)
         if (pgram.dtype == 'float32'):
             kernel = _kernel_cache[(str(numba_type))] = cuda.jit(sig, fastmath=True)(_numba_lombscargle_32)
-            print(kernel._func.get().attrs.regs)
+            print("Registers", kernel._func.get().attrs.regs)
         elif (pgram.dtype == 'float64'):
             kernel = _kernel_cache[(str(numba_type))] = cuda.jit(sig, fastmath=True)(_numba_lombscargle_64)
-            print(kernel._func.get().attrs.regs)
+            print("Registers", kernel._func.get().attrs.regs)
 
     device_id = cp.cuda.Device()
     numSM = device_id.attributes["MultiProcessorCount"]

@@ -96,7 +96,7 @@ def _lombscargle(x, y, freqs, pgram, y_dot):
     else:
         sig = _numba_lombscargle_signature(numba_type)
         kernel = _kernel_cache[(str(numba_type))] = cuda.jit(sig)(_numba_lombscargle)
-        print(kernel._func.get().attrs.regs)
+        print("Registers", kernel._func.get().attrs.regs)
 
     device_id = cp.cuda.Device()
     numSM = device_id.attributes["MultiProcessorCount"]
