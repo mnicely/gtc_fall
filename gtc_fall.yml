@@ -1,4 +1,4 @@
-name: cusignal-dev
+name: gtc_fall
 channels:
   - conda-forge
   - nvidia
