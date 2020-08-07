@@ -32,79 +32,123 @@
     --generate-code arch=compute_75,code=[sm_75,compute_75] \
     _lombscargle.cu -odir .
 */
-template<typename T>
-__device__ void _cupy_lombscargle( const int x_shape,
-                                   const int freqs_shape,
-                                   const T *__restrict__ x,
-                                   const T *__restrict__ y,
-                                   const T *__restrict__ freqs,
-                                   T *__restrict__ pgram,
-                                   const T *__restrict__ y_dot ) {
 
-    const int tx { static_cast<int>( blockIdx.x * blockDim.x + threadIdx.x ) };
-    const int stride { static_cast<int>( blockDim.x * gridDim.x ) };
-
-    T yD {};
-    if ( y_dot[0] == 0 ) {
-        yD = 1.0;
-    } else {
-        yD = 2.0 / y_dot[0];
-    }
-
-    for ( int tid = tx; tid < freqs_shape; tid += stride ) {
-
-        T freq { freqs[tid] };
-
-        T xc {};
-        T xs {};
-        T cc {};
-        T ss {};
-        T cs {};
-        T c {};
-        T s {};
-
-        for ( int j = 0; j < x_shape; j++ ) {
-            c = cos( freq * x[j] );
-            s = sin( freq * x[j] );
-
-            xc += y[j] * c;
-            xs += y[j] * s;
-            cc += c * c;
-            ss += s * s;
-            cs += c * s;
+extern "C" {
+    __global__ void _cupy_lombscargle_float32(
+            const int x_shape,
+            const int freqs_shape,
+            const float * __restrict__ x,
+            const float * __restrict__ y,
+            const float * __restrict__ freqs,
+            float * __restrict__ pgram,
+            const float * __restrict__ y_dot
+            ) {
+        const int tx {
+            static_cast<int>( blockIdx.x * blockDim.x + threadIdx.x ) };
+        const int stride { static_cast<int>( blockDim.x * gridDim.x ) };
+        float yD {};
+        if ( y_dot[0] == 0 ) {
+            yD = 1.0f;
+        } else {
+            yD = 2.0f / y_dot[0];
         }
-
-        T tau { static_cast<T>( atan2( static_cast<T>( 2.0 * cs ), cc - ss ) / ( 2.0 * freq ) ) };
-        T c_tau { cos( freq * tau ) };
-        T s_tau { sin( freq * tau ) };
-        T c_tau2 { c_tau * c_tau };
-        T s_tau2 { s_tau * s_tau };
-        T cs_tau { static_cast<T>( 2.0 * c_tau * s_tau ) };
-
-        pgram[tid] = ( 0.5 * ( ( ( c_tau * xc + s_tau * xs ) * ( c_tau * xc + s_tau * xs ) /
-                                  ( c_tau2 * cc + cs_tau * cs + s_tau2 * ss ) ) +
-                                ( ( c_tau * xs - s_tau * xc ) * ( c_tau * xs - s_tau * xc ) /
-                                  ( c_tau2 * ss - cs_tau * cs + s_tau2 * cc ) ) ) ) *
-                     yD;
+        for ( int tid = tx; tid < freqs_shape; tid += stride ) {
+            float freq { freqs[tid] };
+            float xc {};
+            float xs {};
+            float cc {};
+            float ss {};
+            float cs {};
+            float c {};
+            float s {};
+            for ( int j = 0; j < x_shape; j++ ) {
+                c = cosf( freq * x[j] );
+                s = sinf( freq * x[j] );
+                xc += y[j] * c;
+                xs += y[j] * s;
+                cc += c * c;
+                ss += s * s;
+                cs += c * s;
+            }
+            float tau { atan2f( 2.0f * cs, cc - ss ) / ( 2.0f * freq ) };
+            float c_tau { cosf(freq * tau) };
+            float s_tau { sinf(freq * tau) };
+            float c_tau2 { c_tau * c_tau };
+            float s_tau2 { s_tau * s_tau };
+            float cs_tau { 2.0f * c_tau * s_tau };
+            pgram[tid] = (
+                0.5f * (
+                   (
+                       ( c_tau * xc + s_tau * xs )
+                       * ( c_tau * xc + s_tau * xs )
+                       / ( c_tau2 * cc + cs_tau * cs + s_tau2 * ss )
+                    )
+                   + (
+                       ( c_tau * xs - s_tau * xc )
+                       * ( c_tau * xs - s_tau * xc )
+                       / ( c_tau2 * ss - cs_tau * cs + s_tau2 * cc )
+                    )
+                )
+            ) * yD;
+        }
     }
-}
 
-extern "C" __global__ void _cupy_lombscargle_float32( const int x_shape,
-                                                                               const int freqs_shape,
-                                                                               const float *__restrict__ x,
-                                                                               const float *__restrict__ y,
-                                                                               const float *__restrict__ freqs,
-                                                                               float *__restrict__ pgram,
-                                                                               const float *__restrict__ y_dot ) {
-    _cupy_lombscargle<float>( x_shape, freqs_shape, x, y, freqs, pgram, y_dot );
-}
-
-extern "C" __global__ void _cupy_lombscargle_float64( const int x_shape,
-                                                                               const int freqs_shape,
-                                                                               const double *__restrict__ x,
-                                                                               const double *__restrict__ y,
-                                                                               const double *__restrict__ freqs,
-                                                                               double *__restrict__ pgram,
-                                                                               const double *__restrict__ y_dot ) {
-    _cupy_lombscargle<double>( x_shape, freqs_shape, x, y, freqs, pgram, y_dot );
+    __global__ void _cupy_lombscargle_float64(
+            const int x_shape,
+            const int freqs_shape,
+            const double * __restrict__ x,
+            const double * __restrict__ y,
+            const double * __restrict__ freqs,
+            double * __restrict__ pgram,
+            const double * __restrict__ y_dot
+            ) {
+        const int tx {
+            static_cast<int>( blockIdx.x * blockDim.x + threadIdx.x ) };
+        const int stride { static_cast<int>( blockDim.x * gridDim.x ) };
+        double yD {};
+        if ( y_dot[0] == 0 ) {
+            yD = 1.0;
+        } else {
+            yD = 2.0 / y_dot[0];
+        }
+        for ( int tid = tx; tid < freqs_shape; tid += stride ) {
+            double freq { freqs[tid] };
+            double xc {};
+            double xs {};
+            double cc {};
+            double ss {};
+            double cs {};
+            double c {};
+            double s {};
+            for ( int j = 0; j < x_shape; j++ ) {
+                c = cos( freq * x[j] );
+                s = sin( freq * x[j] );
+                xc += y[j] * c;
+                xs += y[j] * s;
+                cc += c * c;
+                ss += s * s;
+                cs += c * s;
+            }
+            double tau { atan2( 2.0 * cs, cc - ss ) / ( 2.0 * freq ) };
+            double c_tau { cos(freq * tau) };
+            double s_tau { sin(freq * tau) };
+            double c_tau2 { c_tau * c_tau };
+            double s_tau2 { s_tau * s_tau };
+            double cs_tau { 2.0 * c_tau * s_tau };
+            pgram[tid] = (
+                0.5 * (
+                   (
+                       ( c_tau * xc + s_tau * xs )
+                       * ( c_tau * xc + s_tau * xs )
+                       / ( c_tau2 * cc + cs_tau * cs + s_tau2 * ss )
+                    )
+                   + (
+                       ( c_tau * xs - s_tau * xc )
+                       * ( c_tau * xs - s_tau * xc )
+                       / ( c_tau2 * ss - cs_tau * cs + s_tau2 * cc )
+                    )
+                )
+            ) * yD;
+        }
+    }
 }

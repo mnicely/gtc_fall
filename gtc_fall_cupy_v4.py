@@ -17,9 +17,140 @@ import sys
 
 from cupy import prof
 from scipy import signal
+from string import Template
+
+
+# CuPy: Version 4
+# Implementations a user level cache from version 2.
+# Seperates 32 bit and 64 bit versions to 
+# reduce register pressure from version 3.
+# Allows --use_fast_math flag to kernel compile
 
 
 _kernel_cache = {}
+
+
+_cupy_lombscargle_src =  r"""
+extern "C" {
+    __global__ void _cupy_lombscargle_float32(
+            const int x_shape,
+            const int freqs_shape,
+            const float * __restrict__ x,
+            const float * __restrict__ y,
+            const float * __restrict__ freqs,
+            float * __restrict__ pgram,
+            const float * __restrict__ y_dot
+            ) {
+        const int tx {
+            static_cast<int>( blockIdx.x * blockDim.x + threadIdx.x ) };
+        const int stride { static_cast<int>( blockDim.x * gridDim.x ) };
+        float yD {};
+        if ( y_dot[0] == 0 ) {
+            yD = 1.0f;
+        } else {
+            yD = 2.0f / y_dot[0];
+        }
+        for ( int tid = tx; tid < freqs_shape; tid += stride ) {
+            float freq { freqs[tid] };
+            float xc {};
+            float xs {};
+            float cc {};
+            float ss {};
+            float cs {};
+            float c {};
+            float s {};
+            for ( int j = 0; j < x_shape; j++ ) {
+                c = cosf( freq * x[j] );
+                s = sinf( freq * x[j] );
+                xc += y[j] * c;
+                xs += y[j] * s;
+                cc += c * c;
+                ss += s * s;
+                cs += c * s;
+            }
+            float tau { atan2f( 2.0f * cs, cc - ss ) / ( 2.0f * freq ) };
+            float c_tau { cosf(freq * tau) };
+            float s_tau { sinf(freq * tau) };
+            float c_tau2 { c_tau * c_tau };
+            float s_tau2 { s_tau * s_tau };
+            float cs_tau { 2.0f * c_tau * s_tau };
+            pgram[tid] = (
+                0.5f * (
+                   (
+                       ( c_tau * xc + s_tau * xs )
+                       * ( c_tau * xc + s_tau * xs )
+                       / ( c_tau2 * cc + cs_tau * cs + s_tau2 * ss )
+                    )
+                   + (
+                       ( c_tau * xs - s_tau * xc )
+                       * ( c_tau * xs - s_tau * xc )
+                       / ( c_tau2 * ss - cs_tau * cs + s_tau2 * cc )
+                    )
+                )
+            ) * yD;
+        }
+    }
+
+    __global__ void _cupy_lombscargle_float64(
+            const int x_shape,
+            const int freqs_shape,
+            const double * __restrict__ x,
+            const double * __restrict__ y,
+            const double * __restrict__ freqs,
+            double * __restrict__ pgram,
+            const double * __restrict__ y_dot
+            ) {
+        const int tx {
+            static_cast<int>( blockIdx.x * blockDim.x + threadIdx.x ) };
+        const int stride { static_cast<int>( blockDim.x * gridDim.x ) };
+        double yD {};
+        if ( y_dot[0] == 0 ) {
+            yD = 1.0;
+        } else {
+            yD = 2.0 / y_dot[0];
+        }
+        for ( int tid = tx; tid < freqs_shape; tid += stride ) {
+            double freq { freqs[tid] };
+            double xc {};
+            double xs {};
+            double cc {};
+            double ss {};
+            double cs {};
+            double c {};
+            double s {};
+            for ( int j = 0; j < x_shape; j++ ) {
+                c = cos( freq * x[j] );
+                s = sin( freq * x[j] );
+                xc += y[j] * c;
+                xs += y[j] * s;
+                cc += c * c;
+                ss += s * s;
+                cs += c * s;
+            }
+            double tau { atan2( 2.0 * cs, cc - ss ) / ( 2.0 * freq ) };
+            double c_tau { cos(freq * tau) };
+            double s_tau { sin(freq * tau) };
+            double c_tau2 { c_tau * c_tau };
+            double s_tau2 { s_tau * s_tau };
+            double cs_tau { 2.0 * c_tau * s_tau };
+            pgram[tid] = (
+                0.5 * (
+                   (
+                       ( c_tau * xc + s_tau * xs )
+                       * ( c_tau * xc + s_tau * xs )
+                       / ( c_tau2 * cc + cs_tau * cs + s_tau2 * ss )
+                    )
+                   + (
+                       ( c_tau * xs - s_tau * xc )
+                       * ( c_tau * xs - s_tau * xc )
+                       / ( c_tau2 * ss - cs_tau * cs + s_tau2 * cc )
+                    )
+                )
+            ) * yD;
+        }
+    }
+}
+"""
 
 
 def _lombscargle(x, y, freqs, pgram, y_dot):
@@ -27,7 +158,7 @@ def _lombscargle(x, y, freqs, pgram, y_dot):
     if (str(pgram.dtype)) in _kernel_cache:
         kernel = _kernel_cache[(str(pgram.dtype))]
     else:
-        module = cp.RawModule(path="./_lombscargle.fatbin")
+        module = cp.RawModule(code=_cupy_lombscargle_src, options=("-std=c++11", "--use_fast_math"))
         kernel = _kernel_cache[(str(pgram.dtype))] = module.get_function("_cupy_lombscargle_" + str(pgram.dtype))
         print("Registers", kernel.num_regs)
 

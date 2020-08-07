@@ -19,6 +19,15 @@ from cupy import prof
 from scipy import signal
 
 
+# CuPy: Version 6
+# Implementations a user level cache from version 2.
+# Seperates 32 bit and 64 bit versions to 
+# reduce register pressure from version 3.
+# Allows --use_fast_math flag to kernel compile from version 4.
+# Move CUDA to cu file and build a fatbin to load with CuPy from version 5.
+# Add launch bounds to CUDA kernel to assist compiler.
+
+
 _kernel_cache = {}
 
 
@@ -27,7 +36,7 @@ def _lombscargle(x, y, freqs, pgram, y_dot):
     if (str(pgram.dtype)) in _kernel_cache:
         kernel = _kernel_cache[(str(pgram.dtype))]
     else:
-        module = cp.RawModule(path="./_lombscargle_lb_f.fatbin")
+        module = cp.RawModule(path="./_lombscargle_lb.fatbin")
         kernel = _kernel_cache[(str(pgram.dtype))] = module.get_function("_cupy_lombscargle_" + str(pgram.dtype))
         print("Registers", kernel.num_regs)
 

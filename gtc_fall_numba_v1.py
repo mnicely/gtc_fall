@@ -21,6 +21,10 @@ from numba import cuda, void, float32, float64
 from scipy import signal
 
 
+# Numba: Version 1
+# Naive implementation of Numba
+
+
 def _numba_lombscargle(x, y, freqs, pgram, y_dot):
 
     F = cuda.grid(1)

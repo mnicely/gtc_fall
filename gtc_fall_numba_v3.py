@@ -21,6 +21,12 @@ from numba import cuda, void, int32, float32, float64, boolean
 from scipy import signal
 
 
+# Numba: Version 3
+# Implementations a user level cache from version 2
+# and seperates 32 bit and 64 bit versions to 
+# reduce register pressure.
+
+
 _kernel_cache = {}
 
 

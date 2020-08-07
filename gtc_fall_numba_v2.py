@@ -21,6 +21,14 @@ from numba import cuda, void, float32, float64
 from scipy import signal
 
 
+# Numba: Version 2
+# Implementations a user level cache
+# On first run the Numba kernel is compiled
+# and stored in _kernel_cache. Every sequential
+# call will run kernel from user cache instead
+# of going through Numba's logic
+
+
 _kernel_cache = {}
 
 

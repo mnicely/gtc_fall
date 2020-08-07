@@ -21,6 +21,10 @@ from scipy import signal
 from string import Template
 
 
+# CuPy: Version 1
+# Naive implementation of CuPy
+
+
 _cupy_lombscargle_src = Template(
     """
 extern "C" {

@@ -21,6 +21,14 @@ from scipy import signal
 from string import Template
 
 
+# CuPy: Version 1
+# Implementations a user level cache
+# On first run the CuPy kernel is compiled
+# and stored in _kernel_cache. Every sequential
+# call will run kernel from user cache instead
+# of going through CuPy's logic
+
+
 _kernel_cache = {}
 
 

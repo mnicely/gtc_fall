@@ -34,13 +34,70 @@
 */
 
 template<typename T>
-__device__ void _cupy_lombscargle( const int x_shape,
-                                   const int freqs_shape,
-                                   const T *__restrict__ x,
-                                   const T *__restrict__ y,
-                                   const T *__restrict__ freqs,
-                                   T *__restrict__ pgram,
-                                   const T *__restrict__ y_dot ) {
+__device__ void _cupy_lombscargle_float( const int x_shape,
+                                         const int freqs_shape,
+                                         const T *__restrict__ x,
+                                         const T *__restrict__ y,
+                                         const T *__restrict__ freqs,
+                                         T *__restrict__ pgram,
+                                         const T *__restrict__ y_dot ) {
+
+    const int tx { static_cast<int>( blockIdx.x * blockDim.x + threadIdx.x ) };
+    const int stride { static_cast<int>( blockDim.x * gridDim.x ) };
+
+    T yD {};
+    if ( y_dot[0] == 0 ) {
+        yD = 1.0f;
+    } else {
+        yD = 2.0f / y_dot[0];
+    }
+
+    for ( int tid = tx; tid < freqs_shape; tid += stride ) {
+
+        T freq { freqs[tid] };
+
+        T xc {};
+        T xs {};
+        T cc {};
+        T ss {};
+        T cs {};
+        T c {};
+        T s {};
+
+        for ( int j = 0; j < x_shape; j++ ) {
+            c = cosf( freq * x[j] );
+            s = sinf( freq * x[j] );
+
+            xc += y[j] * c;
+            xs += y[j] * s;
+            cc += c * c;
+            ss += s * s;
+            cs += c * s;
+        }
+
+        T tau { atan2f( 2.0f * cs, cc - ss ) / ( 2.0f * freq ) };
+        T c_tau { cosf( freq * tau ) };
+        T s_tau { sinf( freq * tau ) };
+        T c_tau2 { c_tau * c_tau };
+        T s_tau2 { s_tau * s_tau };
+        T cs_tau { 2.0f * c_tau * s_tau };
+
+        pgram[tid] = ( 0.5f * ( ( ( c_tau * xc + s_tau * xs ) * ( c_tau * xc + s_tau * xs ) /
+                                  ( c_tau2 * cc + cs_tau * cs + s_tau2 * ss ) ) +
+                                ( ( c_tau * xs - s_tau * xc ) * ( c_tau * xs - s_tau * xc ) /
+                                  ( c_tau2 * ss - cs_tau * cs + s_tau2 * cc ) ) ) ) *
+                     yD;
+    }
+}
+
+template<typename T>
+__device__ void _cupy_lombscargle_double( const int x_shape,
+                                         const int freqs_shape,
+                                         const T *__restrict__ x,
+                                         const T *__restrict__ y,
+                                         const T *__restrict__ freqs,
+                                         T *__restrict__ pgram,
+                                         const T *__restrict__ y_dot ) {
 
     const int tx { static_cast<int>( blockIdx.x * blockDim.x + threadIdx.x ) };
     const int stride { static_cast<int>( blockDim.x * gridDim.x ) };
@@ -75,12 +132,12 @@ __device__ void _cupy_lombscargle( const int x_shape,
             cs += c * s;
         }
 
-        T tau { static_cast<T>( atan2( static_cast<T>( 2.0 * cs ), cc - ss ) / ( 2.0 * freq ) ) };
+        T tau { atan2( 2.0f * cs, cc - ss ) / ( 2.0f * freq ) };
         T c_tau { cos( freq * tau ) };
         T s_tau { sin( freq * tau ) };
         T c_tau2 { c_tau * c_tau };
         T s_tau2 { s_tau * s_tau };
-        T cs_tau { static_cast<T>( 2.0 * c_tau * s_tau ) };
+        T cs_tau { 2.0 * c_tau * s_tau };
 
         pgram[tid] = ( 0.5 * ( ( ( c_tau * xc + s_tau * xs ) * ( c_tau * xc + s_tau * xs ) /
                                   ( c_tau2 * cc + cs_tau * cs + s_tau2 * ss ) ) +
@@ -97,7 +154,7 @@ extern "C" __global__ void __launch_bounds__( 128 ) _cupy_lombscargle_float32( c
                                                                                const float *__restrict__ freqs,
                                                                                float *__restrict__ pgram,
                                                                                const float *__restrict__ y_dot ) {
-    _cupy_lombscargle<float>( x_shape, freqs_shape, x, y, freqs, pgram, y_dot );
+    _cupy_lombscargle_float<float>( x_shape, freqs_shape, x, y, freqs, pgram, y_dot );
 }
 
 extern "C" __global__ void __launch_bounds__( 128 ) _cupy_lombscargle_float64( const int x_shape,
@@ -107,5 +164,5 @@ extern "C" __global__ void __launch_bounds__( 128 ) _cupy_lombscargle_float64( c
                                                                                const double *__restrict__ freqs,
                                                                                double *__restrict__ pgram,
                                                                                const double *__restrict__ y_dot ) {
-    _cupy_lombscargle<double>( x_shape, freqs_shape, x, y, freqs, pgram, y_dot );
+    _cupy_lombscargle_double<double>( x_shape, freqs_shape, x, y, freqs, pgram, y_dot );
 }
