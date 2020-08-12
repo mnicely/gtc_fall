@@ -43,16 +43,20 @@ extern "C" {
             float * __restrict__ pgram,
             const float * __restrict__ y_dot
             ) {
+
         const int tx {
             static_cast<int>( blockIdx.x * blockDim.x + threadIdx.x ) };
         const int stride { static_cast<int>( blockDim.x * gridDim.x ) };
+
         float yD {};
         if ( y_dot[0] == 0 ) {
             yD = 1.0f;
         } else {
             yD = 2.0f / y_dot[0];
         }
+
         for ( int tid = tx; tid < freqs_shape; tid += stride ) {
+
             float freq { freqs[tid] };
             float xc {};
             float xs {};
@@ -61,6 +65,7 @@ extern "C" {
             float cs {};
             float c {};
             float s {};
+
             for ( int j = 0; j < x_shape; j++ ) {
                 c = cosf( freq * x[j] );
                 s = sinf( freq * x[j] );
@@ -70,12 +75,14 @@ extern "C" {
                 ss += s * s;
                 cs += c * s;
             }
+
             float tau { atan2f( 2.0f * cs, cc - ss ) / ( 2.0f * freq ) };
             float c_tau { cosf(freq * tau) };
             float s_tau { sinf(freq * tau) };
             float c_tau2 { c_tau * c_tau };
             float s_tau2 { s_tau * s_tau };
             float cs_tau { 2.0f * c_tau * s_tau };
+
             pgram[tid] = (
                 0.5f * (
                    (
@@ -90,6 +97,7 @@ extern "C" {
                     )
                 )
             ) * yD;
+
         }
     }
 
@@ -102,16 +110,20 @@ extern "C" {
             double * __restrict__ pgram,
             const double * __restrict__ y_dot
             ) {
+
         const int tx {
             static_cast<int>( blockIdx.x * blockDim.x + threadIdx.x ) };
         const int stride { static_cast<int>( blockDim.x * gridDim.x ) };
+
         double yD {};
         if ( y_dot[0] == 0 ) {
             yD = 1.0;
         } else {
             yD = 2.0 / y_dot[0];
         }
+
         for ( int tid = tx; tid < freqs_shape; tid += stride ) {
+
             double freq { freqs[tid] };
             double xc {};
             double xs {};
@@ -120,6 +132,7 @@ extern "C" {
             double cs {};
             double c {};
             double s {};
+
             for ( int j = 0; j < x_shape; j++ ) {
                 c = cos( freq * x[j] );
                 s = sin( freq * x[j] );
@@ -129,12 +142,14 @@ extern "C" {
                 ss += s * s;
                 cs += c * s;
             }
+
             double tau { atan2( 2.0 * cs, cc - ss ) / ( 2.0 * freq ) };
             double c_tau { cos(freq * tau) };
             double s_tau { sin(freq * tau) };
             double c_tau2 { c_tau * c_tau };
             double s_tau2 { s_tau * s_tau };
             double cs_tau { 2.0 * c_tau * s_tau };
+
             pgram[tid] = (
                 0.5 * (
                    (
@@ -149,6 +164,7 @@ extern "C" {
                     )
                 )
             ) * yD;
+            
         }
     }
 }

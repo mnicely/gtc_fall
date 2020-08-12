@@ -44,16 +44,20 @@ extern "C" {
             ${datatype} * __restrict__ pgram,
             const ${datatype} * __restrict__ y_dot
             ) {
+
         const int tx {
             static_cast<int>( blockIdx.x * blockDim.x + threadIdx.x ) };
         const int stride { static_cast<int>( blockDim.x * gridDim.x ) };
+
         ${datatype} yD {};
         if ( y_dot[0] == 0 ) {
             yD = 1.0;
         } else {
             yD = 2.0 / y_dot[0];
         }
+
         for ( int tid = tx; tid < freqs_shape; tid += stride ) {
+
             ${datatype} freq { freqs[tid] };
             ${datatype} xc {};
             ${datatype} xs {};
@@ -62,6 +66,7 @@ extern "C" {
             ${datatype} cs {};
             ${datatype} c {};
             ${datatype} s {};
+
             for ( int j = 0; j < x_shape; j++ ) {
                 c = cos( freq * x[j] );
                 s = sin( freq * x[j] );
@@ -71,6 +76,7 @@ extern "C" {
                 ss += s * s;
                 cs += c * s;
             }
+
             ${datatype} tau { static_cast<${datatype}>( atan2( 
                 static_cast<${datatype}>( 2.0 * cs ), cc - ss ) / ( 2.0 * freq ) ) };
             ${datatype} c_tau { cos(freq * tau) };
@@ -78,6 +84,7 @@ extern "C" {
             ${datatype} c_tau2 { c_tau * c_tau };
             ${datatype} s_tau2 { s_tau * s_tau };
             ${datatype} cs_tau { static_cast<${datatype}>( 2.0 * c_tau * s_tau ) };
+
             pgram[tid] = (
                 0.5 * (
                    (
@@ -92,6 +99,7 @@ extern "C" {
                     )
                 )
             ) * yD;
+            
         }
     }
 }
