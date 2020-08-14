@@ -1,36 +1,30 @@
 #!/bin/bash
 
 declare LOOPS=$1
-declare BIT=( "b32" "b64" )
+declare BIT=$2
 declare SCIPY=1
 declare NUMBA=4
 declare CUPY=6
 
 
 # Test Scipy
-for (( m=0; m<${#BIT[@]}; m++ ))
+for (( n=1; n<=${SCIPY}; n++ ))
 do
-	for (( n=1; n<=${SCIPY}; n++ ))
-	do
-		echo -e "**************************************************"
-		echo -e "Test gtc_fall_scipy_v${n}.py ${BIT[${m}]} ${LOOPS}"
-		echo -e "**************************************************"
-		nsys profile --sample=none --trace=cuda,nvtx --stats=true python3 gtc_fall_scipy_v${n}.py ${BIT[${m}]} ${LOOPS}
-		echo -e
-	done
+	echo -e "**************************************************"
+	echo -e "Test gtc_fall_scipy_v${n}.py ${BIT} ${LOOPS}"
+	echo -e "**************************************************"
+	nsys profile --sample=none --trace=cuda,nvtx --stats=true python3 gtc_fall_scipy_v${n}.py ${BIT} ${LOOPS}
+	echo -e
 done
 
 # Test Numba
-for (( m=0; m<${#BIT[@]}; m++ ))
+for (( n=1; n<=${NUMBA}; n++ ))
 do
-	for (( n=1; n<=${NUMBA}; n++ ))
-	do
-		echo -e "**************************************************"
-		echo -e "Test gtc_fall_numpy_v${n}.py ${BIT[${m}]} ${LOOPS}"
-		echo -e "**************************************************"
-		nsys profile --sample=none --trace=cuda,nvtx --stats=true python3 gtc_fall_numba_v${n}.py ${BIT[${m}]} ${LOOPS}
-		echo -e
-	done
+	echo -e "**************************************************"
+	echo -e "Test gtc_fall_numpy_v${n}.py ${BIT} ${LOOPS}"
+	echo -e "**************************************************"
+	nsys profile --sample=none --trace=cuda,nvtx --stats=true python3 gtc_fall_numba_v${n}.py ${BIT} ${LOOPS}
+	echo -e
 done
 
 # Build fatbins for CuPy testing
@@ -63,14 +57,11 @@ nvcc --fatbin -std=c++11 --use_fast_math \
 	_lombscargle_lb.cu -odir .
 
 # Test CuPy
-for (( m=0; m<${#BIT[@]}; m++ ))
+for (( n=1; n<=${CUPY}; n++ ))
 do
-	for (( n=1; n<=${CUPY}; n++ ))
-	do
-		echo -e "**************************************************"
-		echo -e "Test gtc_fall_cupy_v${n}.py ${BIT[${m}]} ${LOOPS}"
-		echo -e "**************************************************"
-		nsys profile --sample=none --trace=cuda,nvtx --stats=true python3 gtc_fall_cupy_v${n}.py ${BIT[${m}]} ${LOOPS}
-		echo -e
-	done
+	echo -e "**************************************************"
+	echo -e "Test gtc_fall_cupy_v${n}.py ${BIT} ${LOOPS}"
+	echo -e "**************************************************"
+	nsys profile --sample=none --trace=cuda,nvtx --stats=true python3 gtc_fall_cupy_v${n}.py ${BIT} ${LOOPS}
+	echo -e
 done
