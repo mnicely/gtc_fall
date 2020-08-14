@@ -21,11 +21,12 @@ from numba import cuda, void, int32, float32, float64, boolean
 from scipy import signal
 
 
-# Numba: Version 4
+# Numba: Version 5
 # Implementation a user level cache from version 2.
 # Seperates 32 bit and 64 bit versions to 
 # reduce register pressure from version 3.
-# Allows --use_fast_math flag to kernel compile
+# Allows --use_fast_math flag to kernel compile from version 4.
+# Add max registers parameters
 
 
 _kernel_cache = {}
