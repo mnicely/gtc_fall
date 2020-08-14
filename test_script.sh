@@ -1,7 +1,7 @@
 #!/bin/bash
 
-declare LOOPS=$1
-declare BIT=$2
+declare BIT=$1
+declare LOOPS=$2
 declare SCIPY=1
 declare NUMBA=4
 declare CUPY=6
