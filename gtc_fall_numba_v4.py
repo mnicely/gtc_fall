@@ -145,7 +145,7 @@ def _numba_lombscargle_64(x, y, freqs, pgram, y_dot):
 
 def _numba_lombscargle_signature(ty):
     return void(
-        ty[:], ty[:], ty[:], ty[:], ty[:] # x  # y  # freqs  # pgram  # y_dot
+        ty[::1], ty[::1], ty[::1], ty[::1], ty[::1],  # x  # y  # freqs  # pgram  # y_dot
     )
 
 

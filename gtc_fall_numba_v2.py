@@ -88,7 +88,7 @@ def _numba_lombscargle(x, y, freqs, pgram, y_dot):
 
 def _numba_lombscargle_signature(ty):
     return void(
-        ty[:], ty[:], ty[:], ty[:], ty[:],  # x  # y  # freqs  # pgram  # y_dot
+        ty[::1], ty[::1], ty[::1], ty[::1], ty[::1],  # x  # y  # freqs  # pgram  # y_dot
     )
 
 
@@ -104,7 +104,7 @@ def _lombscargle(x, y, freqs, pgram, y_dot):
     else:
         sig = _numba_lombscargle_signature(numba_type)
         kernel = _kernel_cache[(str(numba_type))] = cuda.jit(sig)(_numba_lombscargle)
-        print("Registers", kernel._func.get().attrs.regs)
+        # print("Registers", kernel._func.get().attrs.regs)
 
     device_id = cp.cuda.Device()
     numSM = device_id.attributes["MultiProcessorCount"]
@@ -114,6 +114,8 @@ def _lombscargle(x, y, freqs, pgram, y_dot):
     kernel[blockspergrid, threadsperblock](x, y, freqs, pgram, y_dot)
 
     cuda.synchronize()
+
+    
 
 
 def lombscargle(
