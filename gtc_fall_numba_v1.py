@@ -25,6 +25,7 @@ from scipy import signal
 # Naive implementation of Numba
 
 
+@cuda.jit
 def _numba_lombscargle(x, y, freqs, pgram, y_dot):
 
     F = cuda.grid(1)
@@ -79,12 +80,6 @@ def _numba_lombscargle(x, y, freqs, pgram, y_dot):
         ) * yD
 
 
-def _numba_lombscargle_signature(ty):
-    return void(
-        ty[:], ty[:], ty[:], ty[:], ty[:],  # x  # y  # freqs  # pgram  # y_dot
-    )
-
-
 def _lombscargle(x, y, freqs, pgram, y_dot):
 
     if (pgram.dtype == 'float32'):
@@ -97,11 +92,7 @@ def _lombscargle(x, y, freqs, pgram, y_dot):
     threadsperblock = (128, )
     blockspergrid = (numSM * 20,)    
 
-    sig = _numba_lombscargle_signature(numba_type)
-    kernel = cuda.jit(sig)(_numba_lombscargle)
-    # print(kernel._func.get().attrs.regs)
-
-    kernel[blockspergrid, threadsperblock](x, y, freqs, pgram, y_dot)
+    _numba_lombscargle[blockspergrid, threadsperblock](x, y, freqs, pgram, y_dot)
     
     cuda.synchronize()
 
