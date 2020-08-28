@@ -251,7 +251,7 @@ if __name__ == "__main__":
     f = np.linspace(0.01, 10, out_samps)
 
     # Use float32 if b32 passed
-    if dtype == 'b32':
+    if dtype == 'float32':
         x = x.astype(np.float32)
         y = y.astype(np.float32)
         f = f.astype(np.float32)

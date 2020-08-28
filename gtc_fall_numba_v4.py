@@ -153,7 +153,9 @@ def _lombscargle(x, y, freqs, pgram, y_dot):
 
     if (pgram.dtype == 'float32'):
         numba_type = float32
+        print("1. here32")
     elif (pgram.dtype == 'float64'):
+        print("1. here64")
         numba_type = float64
 
     if (str(numba_type)) in _kernel_cache:
@@ -161,9 +163,11 @@ def _lombscargle(x, y, freqs, pgram, y_dot):
     else:
         sig = _numba_lombscargle_signature(numba_type)
         if (pgram.dtype == 'float32'):
+            print("2. here32", numba_type)
             kernel = _kernel_cache[(str(numba_type))] = cuda.jit(sig, fastmath=True)(_numba_lombscargle_32)
             print("Registers", kernel._func.get().attrs.regs)
         elif (pgram.dtype == 'float64'):
+            print("2. here64", numba_type)
             kernel = _kernel_cache[(str(numba_type))] = cuda.jit(sig, fastmath=True)(_numba_lombscargle_64)
             print("Registers", kernel._func.get().attrs.regs)
 
@@ -230,7 +234,7 @@ if __name__ == "__main__":
     f = np.linspace(0.01, 10, out_samps)
 
     # Use float32 if b32 passed
-    if dtype == 'b32':
+    if dtype == 'float32':
         x = x.astype(np.float32)
         y = y.astype(np.float32)
         f = f.astype(np.float32)
